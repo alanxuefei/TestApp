@@ -1,0 +1,36 @@
+package i2r.astar.edu.global;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import i2r.astar.edu.to.ErrorTO;
+import i2r.astar.edu.to.ModeChangeTO;
+
+/**
+ * Created by dashm on 9/6/15.
+ */
+public class GlobalState {
+
+
+    public static boolean blnLocationServiceRunning = false;
+    public static boolean blnSensorServiceRunnning = false;
+    public static boolean blnLightSensorServiceRunning = false;
+    public static boolean blnStepSensorServiceRunning = false;
+
+    public static boolean ENABLE_GPS = false;
+    public static boolean ENABLE_NETWORK = true;
+    public static boolean SETTINGS_CHANGE = false;
+
+    public static int UPDATE_DURATION = 1;
+    public static int LOCATION_SPEED = UPDATE_DURATION * Constant.SECONDS * 1000;
+
+    public static String strLastTriggered = "";
+
+    public static boolean RE_TRIGGER = false;
+    public static int intTotalErrorAccelerator = 0;
+    public static int intCurrentMode = Constant.MODE_NA;
+
+    public static List<ModeChangeTO> lstModeChange = new ArrayList<ModeChangeTO>();
+
+    public static List<ErrorTO> lstError = new ArrayList<ErrorTO>();
+}

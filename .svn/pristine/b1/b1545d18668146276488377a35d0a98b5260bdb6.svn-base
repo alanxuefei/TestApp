@@ -1,0 +1,20 @@
+package i2r.astar.edu.global;
+
+/**
+ * Created by dashm on 10/6/15.
+ */
+public class Constant {
+
+
+    public static final float SHAKE_THRESHOLD = 1.5f;
+    public static final long NANO_TO_SEC = 1000000000;
+    public static final int SECONDS = 60;
+    public static final String TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss";
+
+
+    public static final String TRIGGERED = "triggered";
+
+    public static final String SQL_PK_ID = "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL";
+    public static final String  SQL_CREATE_TABLE = "CREATE TABLE";
+    public static final String SQL_TABLE_LOCATION = "tblLocation";
+}

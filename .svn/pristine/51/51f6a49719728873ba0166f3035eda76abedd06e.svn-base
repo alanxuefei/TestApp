@@ -1,0 +1,315 @@
+package i2r.astar.edu.ui;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.res.Resources;
+import android.database.sqlite.SQLiteDatabase;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
+import android.location.LocationManager;
+import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.AppCompatActivity;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+
+import java.util.List;
+
+import i2r.astar.edu.global.Constant;
+import i2r.astar.edu.global.GlobalState;
+import i2r.astar.edu.listener.LightSensorListenerService;
+import i2r.astar.edu.listener.LocationListenerService;
+import i2r.astar.edu.listener.AccelerometerEventListenerService;
+import i2r.astar.edu.listener.StepSensorListener;
+import i2r.astar.edu.service.DatabaseService;
+import i2r.astar.edu.service.ForegroundService;
+import i2r.astar.edu.testapp.DatabaseContext;
+import i2r.astar.edu.testapp.*;
+import i2r.astar.edu.util.Utils;
+
+
+public class MainMenuUI extends AppCompatActivity {
+
+    LocationManager objLocationMgr;
+    SensorManager objDeviceSensorMgr;
+    LocationListenerService objLocationService;
+    AccelerometerEventListenerService objAccSensorListener;
+    LightSensorListenerService objLightSensor;
+    StepSensorListener objStepSensor;
+
+    DatabaseService objDatabaseService;
+    SQLiteDatabase objDatabase;
+
+    Resources objRes;
+    TextView objLastTriggered;
+
+    LocalBroadcastManager objBroadcastMgr;
+    BroadcastReceiver objReceiver;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main_menu);
+
+        objLocationMgr = (LocationManager) getSystemService(LOCATION_SERVICE);
+        objDeviceSensorMgr =
+                (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+
+        objDatabaseService = new DatabaseService(new DatabaseContext(this));
+        objDatabase = objDatabaseService.getWritableDatabase();
+
+        objBroadcastMgr = LocalBroadcastManager.getInstance(this);
+        objReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                triggered();
+            }
+        };
+
+        this.objLightSensor = new LightSensorListenerService(objDatabase, objDeviceSensorMgr);
+        objStepSensor = new StepSensorListener(objDatabase, objDeviceSensorMgr);
+        objLocationService = new LocationListenerService(objDatabase, objDeviceSensorMgr,
+                objLightSensor, objStepSensor, objBroadcastMgr);
+        objAccSensorListener = new AccelerometerEventListenerService(objDatabase);
+
+
+        objRes = this.getResources();
+        objLastTriggered = (TextView) findViewById(R.id.lblLastTrigger);
+
+    }
+
+    @Override
+    public void onPause(){
+        super.onPause();
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(objReceiver);
+    }
+
+    @Override
+    public void onStart(){
+        super.onStart();
+        LocalBroadcastManager.getInstance(this).registerReceiver((objReceiver),
+                new IntentFilter(Constant.TRIGGERED));
+    }
+
+    public void onStop(){
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(objReceiver);
+        super.onStop();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            Intent intent = new Intent(this, LocationListenerSelectorUI.class);
+            startActivity(intent);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+
+    public void controlStepSensor() {
+        List<Sensor> lstStepSensor = objDeviceSensorMgr.getSensorList(Sensor.TYPE_STEP_DETECTOR);
+        TextView objStepSensorLabel = (TextView) findViewById(R.id.lblStepSensorStatus);
+
+
+            if (lstStepSensor.size() == 0) {
+                objStepSensorLabel.setText("No Step Senor on Phone");
+                GlobalState.blnStepSensorServiceRunning = false;
+            } else {
+                objStepSensorLabel.setText("Started");
+                GlobalState.blnStepSensorServiceRunning = true;
+                objDeviceSensorMgr.registerListener(objStepSensor,
+                        objDeviceSensorMgr.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR), SensorManager
+                                .SENSOR_DELAY_NORMAL);
+            }
+    }
+
+
+    public void controlMotionSensor(View view) {
+
+        // ===========================================================
+        // Sensor Data
+        // ===========================================================
+        List<Sensor> lstAccelerometerSensor =
+                objDeviceSensorMgr.getSensorList(Sensor.TYPE_ACCELEROMETER);
+        TextView objAccelerometerLabel = (TextView) findViewById(R.id.lblSensorStatus);
+        Button objButton = (Button) findViewById(R.id.btnMovementMonitoring);
+
+        // Start Sensor
+        if (!GlobalState.blnSensorServiceRunnning) {
+            if (lstAccelerometerSensor.size() > 0) {
+                objDeviceSensorMgr.registerListener(objAccSensorListener, objDeviceSensorMgr
+                                .getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+                        SensorManager.SENSOR_DELAY_NORMAL);
+
+                objAccelerometerLabel.setText(objRes.getText(R.string.started));
+                GlobalState.blnSensorServiceRunnning = true;
+                objButton.setText(objRes.getText(R.string.stopMonitoringMovement));
+                startForegrdService();
+            } else {
+                objAccelerometerLabel.setText(objRes.getText(R.string.sensorDisabled));
+                GlobalState.blnSensorServiceRunnning = false;
+            }
+        } else {
+            objDeviceSensorMgr.unregisterListener(objAccSensorListener, objDeviceSensorMgr
+                    .getDefaultSensor(Sensor.TYPE_ACCELEROMETER));
+            objAccelerometerLabel.setText(objRes.getText(R.string.stopped));
+            objButton.setText(objRes.getText(R.string.startMonitoringMovement));
+            GlobalState.blnSensorServiceRunnning = false;
+            stopForegrdService();
+        }
+    }
+
+
+    public void controlLocationLightSensor(View view) {
+        // ===========================================================
+        // Light Sensor
+        // ===========================================================
+        List<Sensor> lstSensorLightList =
+                objDeviceSensorMgr.getSensorList(Sensor.TYPE_LIGHT);
+
+        // ===========================================================
+        // Location Data
+        // ===========================================================
+        List<String> providers = objLocationMgr.getProviders(true);
+        TextView lblLocationStatus = (TextView) findViewById(R.id.lblLocationStatus);
+        TextView lblStepStatus = (TextView) findViewById(R.id.lblStepSensorStatus);
+        Button objButton = (Button) findViewById(R.id.btnLocationMonitoring);
+
+        if (!GlobalState.blnLocationServiceRunning) {
+            int intStartCount = 0;
+            boolean blnProcess = true;
+            if (providers == null || providers.size() == 0) {
+                blnProcess = false;
+            }
+
+            if (blnProcess) {
+                if (providers.contains(LocationManager.NETWORK_PROVIDER) && GlobalState
+                        .ENABLE_NETWORK) {
+                    objLocationMgr.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
+                            GlobalState
+                                    .LOCATION_SPEED,
+                            0, objLocationService);
+                    intStartCount++;
+                }
+                if (providers.contains(LocationManager.GPS_PROVIDER) && GlobalState.ENABLE_GPS) {
+                    objLocationMgr.requestLocationUpdates(LocationManager.GPS_PROVIDER, GlobalState
+                                    .LOCATION_SPEED,
+                            0, objLocationService);
+                    intStartCount++;
+                }
+            }//end if
+            if (intStartCount > 0) {
+                lblLocationStatus.setText(objRes.getText(R.string.started));
+                objButton.setText(objRes.getText(R.string.stopMonitoringLocation));
+                GlobalState.blnLocationServiceRunning = true;
+                startForegrdService();
+            } else {
+                lblLocationStatus.setText(objRes.getText(R.string.locationDisabled));
+            }
+
+            // Light Sensor
+            if (lstSensorLightList.size() > 0 && !GlobalState.blnLightSensorServiceRunning) {
+                GlobalState.blnLightSensorServiceRunning = true;
+            } else {
+                GlobalState.blnLightSensorServiceRunning = false;
+            }
+
+            // Step Sensor
+            controlStepSensor();
+        }//end if
+        else {
+            objLocationMgr.removeUpdates(objLocationService);
+            objDeviceSensorMgr.unregisterListener(objLightSensor, objDeviceSensorMgr
+                    .getDefaultSensor(Sensor.TYPE_LIGHT));
+            objDeviceSensorMgr.unregisterListener(objStepSensor,
+                    objDeviceSensorMgr.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR));
+
+            GlobalState.blnLocationServiceRunning = false;
+            GlobalState.blnLightSensorServiceRunning = false;
+            GlobalState.blnStepSensorServiceRunning = false;
+            lblLocationStatus.setText(objRes.getText(R.string.stopped));
+            lblStepStatus.setText(objRes.getText(R.string.stopped));
+            objButton.setText(objRes.getText(R.string.startMonitoringLocation));
+
+            stopForegrdService();
+        }//end else
+
+    }
+
+    public void updateScreen() {
+        TextView objLocationStatus = (TextView) findViewById(R.id.lblLocationStatus);
+        TextView objSensorStatus = (TextView) findViewById(R.id.lblSensorStatus);
+        TextView lblStepStatus = (TextView) findViewById(R.id.lblStepSensorStatus);
+        Button objLocationButton = (Button) findViewById(R.id.btnLocationMonitoring);
+        Button objMovementButton = (Button) findViewById(R.id.btnMovementMonitoring);
+
+        //Location + Light Sensor
+        if (GlobalState.blnLocationServiceRunning) {
+            objLocationStatus.setText(objRes.getText(R.string.started));
+            objLocationButton.setText(objRes.getText(R.string.stopMonitoringLocation));
+        } else {
+            objLocationStatus.setText(objRes.getText(R.string.stopped));
+            objLocationButton.setText(objRes.getText(R.string.startMonitoringLocation));
+        }
+
+        //Movement Sensor
+        if (GlobalState.blnSensorServiceRunnning) {
+            objSensorStatus.setText(objRes.getText(R.string.started));
+            objMovementButton.setText(objRes.getText(R.string.stopMonitoringMovement));
+        } else {
+            objSensorStatus.setText(objRes.getText(R.string.stopped));
+            objMovementButton.setText(objRes.getText(R.string.startMonitoringMovement));
+        }
+
+        if (GlobalState.blnStepSensorServiceRunning){
+            lblStepStatus.setText(objRes.getText(R.string.started));
+        }else{
+            lblStepStatus.setText(objRes.getText(R.string.stopped));
+        }
+    }
+
+    public void startForegrdService() {
+        Intent intent = new Intent(this, ForegroundService.class);
+        startService(intent);
+    }
+
+    public void stopForegrdService() {
+        if (!GlobalState.blnSensorServiceRunnning &&
+                !GlobalState.blnLightSensorServiceRunning &&
+                !GlobalState.blnLocationServiceRunning) {
+            Intent intent = new Intent(this, ForegroundService.class);
+            stopService(intent);
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateScreen();
+        LocalBroadcastManager.getInstance(this).registerReceiver((objReceiver),
+                new IntentFilter(Constant.TRIGGERED));
+        objLastTriggered.setText(GlobalState.strLastTriggered);
+    }
+
+    public void triggered(){
+        objLastTriggered.setText( GlobalState.strLastTriggered);
+    }
+}

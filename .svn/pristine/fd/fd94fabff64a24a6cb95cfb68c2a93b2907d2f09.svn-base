@@ -1,0 +1,22 @@
+package i2r.astar.edu.global;
+
+/**
+ * Created by dashm on 9/6/15.
+ */
+public class GlobalState {
+
+
+    public static boolean blnLocationServiceRunning = false;
+    public static boolean blnSensorServiceRunnning = false;
+    public static boolean blnLightSensorServiceRunning = false;
+    public static boolean blnStepSensorServiceRunning = false;
+
+    public static boolean ENABLE_GPS = false;
+    public static boolean ENABLE_NETWORK = true;
+    public static boolean SETTINGS_CHANGE = false;
+
+    public static int UPDATE_DURATION = 1;
+    public static int LOCATION_SPEED = UPDATE_DURATION * Constant.SECONDS * 1000;
+
+    public static String strLastTriggered;
+}

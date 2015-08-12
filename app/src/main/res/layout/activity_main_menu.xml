@@ -1,0 +1,139 @@
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" android:paddingLeft="16px" android:paddingRight="16px"
+             android:layout_marginTop="50px" android:layout_marginBottom="50px">
+
+    <!-- Movement Sensor-->
+    <TableRow android:padding="10px">
+        <TextView
+            android:capitalize="characters"
+            android:text="Movement Sensor: " android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/lblSensorStatus"
+            android:capitalize="characters"
+            android:text="Pending" />
+    </TableRow>
+
+    <!-- Location and Light Sensor -->
+    <TableRow android:padding="10px">
+        <TextView
+            android:capitalize="characters"
+            android:text="Location / Light Sensor: " android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/lblLocationStatus"
+            android:capitalize="characters"
+            android:text="Pending" />
+    </TableRow>
+
+    <TableRow android:padding="10px">
+        <TextView
+            android:capitalize="characters"
+            android:text="Step Sensor: " android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/lblStepSensorStatus"
+            android:capitalize="characters"
+            android:text="Pending" />
+    </TableRow>
+
+    <TableRow android:padding="10px">
+        <TextView
+            android:capitalize="characters"
+            android:text="Last Triggered: " android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/lblLastTrigger"
+            android:capitalize="characters"
+            android:text="" />
+
+    </TableRow>
+
+
+    <TableRow android:padding="10px">
+        <TextView
+            android:capitalize="characters"
+            android:text="Error Records: " android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/lblErrorRecords"
+            android:capitalize="characters"
+            android:text="" />
+    </TableRow>
+
+    <TableRow android:padding="10px">
+        <TextView
+            android:capitalize="characters"
+            android:text="Current Mode: " android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/lblCurrentMode"
+            android:capitalize="characters"
+            android:text="" />
+    </TableRow>
+
+
+    <!-- Start Buttons-->
+    <TableRow>
+        <Button android:id="@+id/btnLocationMonitoring"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:text="@string/startMonitoringLocation"
+                android:onClick="controlLocationLightSensor" android:textAllCaps="false" />
+
+        <Button android:id="@+id/btnMovementMonitoring" android:text="@string/startMonitoringMovement"
+                android:onClick="controlMotionSensor" android:textAllCaps="false" />
+    </TableRow>
+
+
+    <!-- Select Mode-->
+    <TableRow android:padding="10px">
+    <TextView
+        android:capitalize="characters"
+        android:text="Select Current Mode: " android:textStyle="bold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+</TableRow>
+
+
+    <TableRow>
+        <Button android:id="@+id/btnWalking"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:text="@string/mode_walking"
+                android:onClick="updateTransportMode" android:textAllCaps="false"
+                android:tag="0" />
+
+        <Button android:id="@+id/btnMRT"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:text="@string/mode_mrt"
+                android:onClick="updateTransportMode" android:textAllCaps="false" android:tag="1" />
+
+
+    </TableRow>
+
+    <TableRow>
+
+        <Button android:id="@+id/btnTaxi" android:text="@string/mode_taxi"
+                android:onClick="updateTransportMode" android:textAllCaps="false" android:tag="2" />
+
+        <Button android:id="@+id/btnCycle" android:text="@string/mode_cycle"
+                android:onClick="updateTransportMode" android:textAllCaps="false" android:tag="3" />
+
+    </TableRow>
+
+
+    <TableRow>
+
+        <Button android:id="@+id/btnBUS"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:text="@string/mode_bus"
+                android:onClick="updateTransportMode" android:textAllCaps="false" android:tag="4" />
+
+        <Button android:id="@+id/btnNA"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:text="@string/mode_na"
+                android:onClick="updateTransportMode" android:textAllCaps="false" android:tag="5" />
+
+    </TableRow>
+</TableLayout>

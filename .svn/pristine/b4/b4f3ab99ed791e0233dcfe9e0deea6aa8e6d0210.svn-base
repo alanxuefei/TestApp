@@ -1,0 +1,289 @@
+package i2r.astar.edu.listener;
+
+import android.content.ContentValues;
+import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.media.MediaRecorder;
+import android.os.Bundle;
+import android.os.Handler;
+import android.support.v4.content.LocalBroadcastManager;
+import android.widget.Button;
+import android.widget.TextView;
+
+import org.joda.time.DateTime;
+import org.joda.time.Minutes;
+
+import java.io.IOException;
+import java.util.List;
+
+import i2r.astar.edu.global.Constant;
+import i2r.astar.edu.global.GlobalState;
+import i2r.astar.edu.testapp.R;
+import i2r.astar.edu.util.Utils;
+import static i2r.astar.edu.global.Constant.*;
+
+/**
+ * Created by dashm on 8/6/15.
+ */
+public class LocationListenerService implements LocationListener {
+
+    // For Stay Region Extraction
+    double dblStayLat = 0;
+    double dblStayLon = 0;
+    DateTime objStayStart;
+    DateTime objLastRecord;
+    double dblStayAccuracy = 0;
+    double dblStayCount = 1;
+
+    SQLiteDatabase objDB = null;
+
+    SensorManager objDeviceSensorMgr;
+    LightSensorListenerService objLightSensor;
+    MediaRecorder objMediaRecorder;
+    StepSensorListener objStepSensor;
+    LocalBroadcastManager objBroadcast;
+    Intent intent;
+    LocationManager objLocationMgr;
+
+    public LocationListenerService(SQLiteDatabase database, SensorManager objSensorMgr,
+                                   LightSensorListenerService objLightSensor, StepSensorListener
+                                           objStepSensor, LocalBroadcastManager objBroadcast,
+                                   LocationManager objLocationMgr) {
+        this.objDB = database;
+        this.objDeviceSensorMgr = objSensorMgr;
+        this.objLightSensor = objLightSensor;
+        this.objMediaRecorder = new MediaRecorder();
+
+        this.objStepSensor = objStepSensor;
+        this.objBroadcast = objBroadcast;
+        this.intent = new Intent(Constant.TRIGGERED);
+
+        this.objLocationMgr = objLocationMgr;
+    }
+
+    private boolean setupMediaRecorder() {
+
+        try {
+            objMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            objMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+            objMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+            objMediaRecorder.setOutputFile("/dev/null");
+            objMediaRecorder.prepare();
+            objMediaRecorder.start();
+            objMediaRecorder.getMaxAmplitude();
+        } catch (Exception e) {
+            objMediaRecorder.reset();
+            return false;
+        }
+        return true;
+    }
+
+    private void closeMediaRecorder() {
+        objMediaRecorder.stop();
+        objMediaRecorder.reset();
+    }
+
+    private void resetStayInfo(double dblEventLat, double dblEventLon, double dblEventAccuracy,
+                               DateTime objNow) {
+        dblStayLat = dblEventLat;
+        dblStayLon = dblEventLon;
+        dblStayAccuracy = dblEventAccuracy;
+        objStayStart = objNow;
+        objLastRecord = objNow;
+        dblStayCount = 2;
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+
+        Utils.startDBTransaction(objDB);
+        double dblEventLat = location.getLatitude();
+        double dblEventLon = location.getLongitude();
+        double dblEventAccuracy = location.getAccuracy();
+        DateTime objNow = new DateTime();
+
+        // ===============================================================
+        // Location Data
+        // ===============================================================
+        insertRawRecords(dblEventLat, dblEventLon, dblEventAccuracy,
+                location.getProvider(), location.getAltitude(), location.getSpeed(), location
+                        .getBearing());
+
+        // ===============================================================
+        // Sample Light
+        // ===============================================================
+        if (GlobalState.blnLightSensorServiceRunning) {
+            objDeviceSensorMgr.registerListener(objLightSensor, objDeviceSensorMgr
+                            .getDefaultSensor(Sensor.TYPE_LIGHT),
+                    SensorManager.SENSOR_DELAY_FASTEST);
+        }
+
+        // ===============================================================
+        // Determine Stay
+        // ===============================================================
+        if (dblStayLat == 0) {
+            resetStayInfo(dblEventLat, dblEventLon, dblEventAccuracy, objNow);
+        } else {
+            // Check Stay
+            double dblDistance = Utils.calDistance2Cells(dblStayLat,
+                    dblStayLon, dblEventLat, dblStayLon);
+
+            if (dblDistance < dblStayAccuracy + dblEventAccuracy) {
+
+                // Update Accuaracy
+                dblStayAccuracy += (dblEventAccuracy - dblStayAccuracy)
+                        / dblStayCount;
+                // Update Centroid
+                dblStayLat += (dblEventLat - dblStayLat)
+                        / dblStayCount;
+                dblStayLon += (dblEventLon - dblStayLon)
+                        / dblStayCount;
+
+                ++dblStayCount;
+                objLastRecord = objNow;
+            } else {
+                if (Minutes.minutesBetween(objStayStart, objLastRecord).getMinutes() > 60) {
+                    insertStayRecords(dblStayLat, dblStayLon, objStayStart, objLastRecord,
+                            dblStayAccuracy);
+                }
+                resetStayInfo(dblEventLat, dblEventLon, dblEventAccuracy, objNow);
+            }
+        }// end check stay
+
+        // ===============================================================
+        // Sound Recorder
+        // ===============================================================
+        try {
+            boolean blnSetupResult = setupMediaRecorder();
+            if (blnSetupResult) {
+                Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    public void run() {
+                        //Insert into database
+                        insertSoundLevel(objMediaRecorder.getMaxAmplitude());
+                        closeMediaRecorder();
+                        updateScreen();
+                    }
+                }, 5000);
+            }
+        } catch (Exception e) {
+            objMediaRecorder = new MediaRecorder();
+        }
+
+        // ===============================================================
+        // Step Sensor
+        // ===============================================================
+        if (GlobalState.blnStepSensorServiceRunning) {
+            objStepSensor.consolidate();
+        }
+
+        // ===============================================================
+        // Settings Changes
+        // ===============================================================
+        if (GlobalState.SETTINGS_CHANGE) {
+            GlobalState.SETTINGS_CHANGE = false;
+            objLocationMgr.removeUpdates(this);
+
+            List<String> providers = objLocationMgr.getProviders(true);
+            boolean blnProcess = true;
+            if (providers == null || providers.size() == 0) {
+                blnProcess = false;
+            }
+
+            if (blnProcess) {
+                if (providers.contains(LocationManager.NETWORK_PROVIDER) && GlobalState
+                        .ENABLE_NETWORK) {
+                    objLocationMgr.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
+                            GlobalState
+                                    .LOCATION_SPEED,
+                            0, this);
+                }
+                if (providers.contains(LocationManager.GPS_PROVIDER) && GlobalState.ENABLE_GPS) {
+                    objLocationMgr.requestLocationUpdates(LocationManager.GPS_PROVIDER, GlobalState
+                                    .LOCATION_SPEED,
+                            0, this);
+                }
+            }//end if
+        }//end settings change
+
+        Utils.endDBTransaction(objDB);
+
+    }
+
+    private void insertSoundLevel(double dblSoundLevel) {
+        ContentValues values = new ContentValues();
+        values.put("dblValue", dblSoundLevel);
+        values.put("tspRecord", Utils.getCurrentTimeStamp());
+        objDB.insertOrThrow("tblSound", null, values);
+    }
+
+
+    private void insertStayRecords(double dblLat, double dblLon, DateTime objStart, DateTime
+            objEnd, double dblAccuracy) {
+
+        ContentValues values = new ContentValues();
+        values.put("dblLat", dblLat);
+        values.put("dblLon", dblLon);
+        values.put("txtStartDate", objStart.toString(Constant.TIMESTAMP_FORMAT));
+        values.put("txtEndDate", objEnd.toString(Constant.TIMESTAMP_FORMAT));
+        values.put("dblAccuracy", dblAccuracy);
+        objDB.insertOrThrow("tblStay", null, values);
+
+    }
+
+
+    private void insertRawRecords(double dblLat, double dblLon, double dblAccuracy, String
+            strProvider, double dblAltitude, double dblSpeed, double dblBearing) {
+        ContentValues values = new ContentValues();
+        values.put("dblLat", dblLat);
+        values.put("dblLon", dblLon);
+        values.put("txtDate", Utils.getCurrentTimeStamp());
+        values.put("txtProvider", strProvider);
+        values.put("dblAccuracy", dblAccuracy);
+        values.put("dblAltitude", dblAltitude);
+        values.put("dblSpeed", dblSpeed);
+        values.put("dblBearing", dblBearing);
+
+        objDB.insertOrThrow(SQL_TABLE_LOCATION, null, values);
+    }
+
+
+    //Not used at the moment
+    public void retrieveAllRecords() {
+        Cursor curData = objDB.query("tblLocation", new String[]{"dblLat", "dblLon",
+                "txtDate"}, null, null, null, null, null);
+        curData.moveToFirst();
+        int intCount = 0;
+
+        if (!curData.isAfterLast()) {
+            do {
+                intCount++;
+            } while (curData.moveToNext());
+        }
+        curData.close();
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+    }
+
+    public void updateScreen() {
+        objBroadcast.sendBroadcast(intent);
+        GlobalState.strLastTriggered = Utils.getCurrentTimeStamp();
+    }
+
+}

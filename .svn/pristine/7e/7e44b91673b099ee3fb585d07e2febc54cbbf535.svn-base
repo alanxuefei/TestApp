@@ -1,0 +1,43 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                tools:context="i2r.astar.edu.ui.LocationListenerSelectorUI" android:orientation="vertical">
+
+    <TextView
+        android:capitalize="characters"
+        android:text="Location Sensor Source: " android:textStyle="bold"  android:layout_width="wrap_content"
+        android:layout_height="wrap_content" android:layout_margin="30px" />
+
+    <CheckBox android:id="@+id/chbGPS"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="GPS" />
+    <CheckBox android:id="@+id/chbNetwork"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="Network" />
+
+    <TextView
+        android:capitalize="characters"
+        android:text="Location / Light Sensor Update Duration: " android:textStyle="bold"  android:layout_width="wrap_content"
+        android:layout_height="wrap_content" android:layout_margin="30px" />
+
+    <Spinner
+        android:id="@+id/spinUpdate"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content" />
+
+    <Button android:id="@+id/btnUpdate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:text="Update"
+            android:onClick="updateOptions" android:textAllCaps="false" android:layout_margin="30px" />
+
+    <TextView
+        android:capitalize="characters"
+        android:text="If the sensor is running, changes will take effect after the next update "
+        android:textStyle="bold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" android:layout_margin="30px" />
+
+</LinearLayout>

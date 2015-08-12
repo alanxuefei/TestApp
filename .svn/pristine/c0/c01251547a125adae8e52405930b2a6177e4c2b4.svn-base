@@ -1,0 +1,118 @@
+package i2r.astar.edu.listener;
+
+import android.content.ContentValues;
+import android.database.sqlite.SQLiteDatabase;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+
+import java.util.Date;
+
+import i2r.astar.edu.global.Constant;
+import i2r.astar.edu.util.Utils;
+
+/**
+ * Created by dashm on 9/6/15.
+ */
+public class AccelerometerEventListenerService implements SensorEventListener {
+
+    SQLiteDatabase database = null;
+    long lngLastChangedTime = 0;
+    Date objDate;
+    private float xAccel;
+    private float yAccel;
+    private float zAccel;
+    /* And here the previous ones */
+    private float xPreviousAccel;
+    private float yPreviousAccel;
+    private float zPreviousAccel;
+    /* Used to suppress the first shaking */
+    private boolean firstUpdate = true;
+    /* Has a shaking motion been started (one direction) */
+    private boolean shakeInitiated = false;
+
+    public AccelerometerEventListenerService(SQLiteDatabase objDatabase) {
+        this.database = objDatabase;
+    }
+
+    private void updateAccelParameters(float xNewAccel, float yNewAccel,
+                                       float zNewAccel) {
+        if (firstUpdate) {
+            xPreviousAccel = xNewAccel;
+            yPreviousAccel = yNewAccel;
+            zPreviousAccel = zNewAccel;
+            firstUpdate = false;
+        } else {
+            xPreviousAccel = xAccel;
+            yPreviousAccel = yAccel;
+            zPreviousAccel = zAccel;
+        }
+        xAccel = xNewAccel;
+        yAccel = yNewAccel;
+        zAccel = zNewAccel;
+    }
+
+    private boolean isAccelerationChanged() {
+        float deltaX = Math.abs(xPreviousAccel - xAccel);
+        float deltaY = Math.abs(yPreviousAccel - yAccel);
+        float deltaZ = Math.abs(zPreviousAccel - zAccel);
+        return (deltaX > Constant.SHAKE_THRESHOLD && deltaY > Constant.SHAKE_THRESHOLD)
+                || (deltaX > Constant.SHAKE_THRESHOLD && deltaZ > Constant.SHAKE_THRESHOLD)
+                || (deltaY > Constant.SHAKE_THRESHOLD && deltaZ > Constant.SHAKE_THRESHOLD);
+    }
+
+    final float alpha = 0.8F;
+    long lngLastRecordedTime = 0;
+    double gravity[] = new double[3];
+    double linear_acceleration[] = new double[3];
+    public synchronized void onShake(long lngEventTime, SensorEvent se) {
+        // Isolate the force of gravity with the low-pass filter.
+        gravity[0] = alpha * gravity[0] + (1 - alpha) * se.values[0];
+        gravity[1] = alpha * gravity[1] + (1 - alpha) * se.values[1];
+        gravity[2] = alpha * gravity[2] + (1 - alpha) * se.values[2];
+
+        // Remove the gravity contribution with the high-pass filter.
+        linear_acceleration[0] = se.values[0] - gravity[0];
+        linear_acceleration[1] = se.values[1] - gravity[1];
+        linear_acceleration[2] = se.values[2] - gravity[2];
+
+        insertValues(new Date(), linear_acceleration[0], linear_acceleration[1], linear_acceleration[2]);
+    }
+
+    public void insertValues(Date objDate, double dblX, double dblY, double dblZ) {
+        ContentValues values = new ContentValues();
+        values.put("txtDate", Utils.objDateFormat.format(objDate));
+        values.put("dblX", dblX);
+        values.put("dblY", dblY);
+        values.put("dblZ", dblZ);
+        database.insertOrThrow("tblSensor", null, values);
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent se) {
+
+        if (se.sensor.getType() == Sensor.TYPE_ACCELEROMETER){
+
+            //Blocks at 1 second interval
+            if (lngLastRecordedTime == 0){
+            }else if (se.timestamp - lngLastRecordedTime < Constant.NANO_TO_SEC){
+                return;
+            }
+            lngLastRecordedTime = se.timestamp;
+
+            updateAccelParameters(se.values[0], se.values[1], se.values[2]);
+            if ((!shakeInitiated) && isAccelerationChanged()) {
+                shakeInitiated = true;
+            } else if ((shakeInitiated) && isAccelerationChanged()) {
+                onShake(se.timestamp, se);
+            } else if ((shakeInitiated) && (!isAccelerationChanged())) {
+                shakeInitiated = false;
+            }
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }
+}

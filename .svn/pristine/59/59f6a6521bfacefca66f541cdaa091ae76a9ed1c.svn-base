@@ -1,0 +1,70 @@
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" android:paddingLeft="16px" android:paddingRight="16px"
+             android:layout_marginTop="50px" android:layout_marginBottom="50px">
+
+    <!-- Movement Sensor-->
+    <TableRow android:padding="30px">
+        <TextView
+            android:capitalize="characters"
+            android:text="Movement Sensor: " android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/lblSensorStatus"
+            android:capitalize="characters"
+            android:text="Pending" />
+    </TableRow>
+
+    <!-- Location and Light Sensor -->
+    <TableRow android:padding="30px">
+        <TextView
+            android:capitalize="characters"
+            android:text="Location / Light Sensor: " android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/lblLocationStatus"
+            android:capitalize="characters"
+            android:text="Pending" />
+    </TableRow>
+
+    <TableRow android:padding="30px">
+        <TextView
+            android:capitalize="characters"
+            android:text="Step Sensor: " android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/lblStepSensorStatus"
+            android:capitalize="characters"
+            android:text="Pending" />
+    </TableRow>
+
+    <TableRow android:padding="30px">
+        <TextView
+            android:capitalize="characters"
+            android:text="Last Triggered: " android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/lblLastTrigger"
+            android:capitalize="characters"
+            android:text="" />
+
+    </TableRow>
+
+    <!-- Start Buttons-->
+    <TableRow android:padding="30px">
+        <Button android:id="@+id/btnLocationMonitoring"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:text="@string/startMonitoringLocation"
+                android:onClick="controlLocationLightSensor" android:textAllCaps="false" />
+
+        <Button android:id="@+id/btnMovementMonitoring"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:text="@string/startMonitoringMovement"
+                android:onClick="controlMotionSensor" android:textAllCaps="false" />
+    </TableRow>
+
+
+
+</TableLayout>
+<!-- From: file:/Users/dashm/Desktop/TestApp/app/src/main/res/layout/activity_main_menu.xml -->

@@ -1,0 +1,66 @@
+Activity Resolver Table:
+  Non-Data Actions:
+      android.intent.action.MAIN:
+        44009310 i2r.astar.edu.testapp/.MainMenu filter 4400cac8
+          Action: "android.intent.action.MAIN"
+          Category: "android.intent.category.LAUNCHER"
+
+Receiver Resolver Table:
+  Non-Data Actions:
+      com.google.android.gms.wallet.ENABLE_WALLET_OPTIMIZATION:
+        4407e9a8 i2r.astar.edu.testapp/com.google.android.gms.wallet.EnableWalletOptimizationReceiver filter 44085438
+          Action: "com.google.android.gms.wallet.ENABLE_WALLET_OPTIMIZATION"
+
+Key Set Manager:
+  [i2r.astar.edu.testapp]
+      Signing KeySets: 3
+
+Packages:
+  Package [i2r.astar.edu.testapp] (42d3b590):
+    userId=10237 gids=[3003, 1028, 1015]
+    pkg=Package{43e5e998 i2r.astar.edu.testapp}
+    codePath=/data/app/i2r.astar.edu.testapp-47.apk
+    resourcePath=/data/app/i2r.astar.edu.testapp-47.apk
+    nativeLibraryPath=/data/app-lib/i2r.astar.edu.testapp-47
+    versionCode=1 targetSdk=22
+    versionName=1.0
+    applicationInfo=ApplicationInfo{43e5ea48 i2r.astar.edu.testapp}
+    flags=[ DEBUGGABLE HAS_CODE ALLOW_CLEAR_USER_DATA ALLOW_BACKUP ]
+    dataDir=/data/data/i2r.astar.edu.testapp
+    supportsScreens=[small, medium, large, xlarge, resizeable, anyDensity]
+    timeStamp=2015-06-08 15:16:23
+    firstInstallTime=2015-06-04 16:11:51
+    lastUpdateTime=2015-06-08 15:16:23
+    signatures=PackageSignatures{4301dcd8 [42d3d7e0]}
+    permissionsFixed=true haveGids=true installStatus=1
+    pkgFlags=[ DEBUGGABLE HAS_CODE ALLOW_CLEAR_USER_DATA ALLOW_BACKUP ]
+    User 0:  installed=true blocked=false stopped=false notLaunched=false enabled=0
+    grantedPermissions:
+      android.permission.READ_EXTERNAL_STORAGE
+      android.permission.USE_CREDENTIALS
+      android.permission.ACCESS_COARSE_LOCATION
+      android.permission.GET_ACCOUNTS
+      android.permission.WRITE_EXTERNAL_STORAGE
+      android.permission.ACCESS_NETWORK_STATE
+      android.permission.INTERNET
+mPackagesOnlyForOwnerUser:
+  package : com.android.mms
+  package : com.android.phone
+  package : com.sec.knox.containeragent
+mComponentsOnlyForOwnerUser:
+  package : com.android.contacts
+    cmp : com.android.contacts:com.android.contacts.activities.DialtactsActivity
+ 
+mEnforceCopyingLibPackages:
+mEnforceCopyingLibPackages  [0]: jp.naver.line.android
+ 
+mSkippingApks:
+mSkippingApks  [0]: SecVideoListUpg.apk
+mSkippingApks  [1]: SamsungMusic10.apk
+mSkippingApks  [2]: SamsungWatchON.apk
+ 
+mSettings.mPackages:
+the number of packages is 341
+mPackages:
+the number of packages is 341
+End!!!!
